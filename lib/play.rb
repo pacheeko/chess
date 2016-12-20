@@ -6,23 +6,25 @@ include ChessMoves
 include ChessBoard
 
 class ChessPlay
-  attr_reader :board, :winner, :current_player, :player1, :player2, :next_board
+  attr_reader :board, :current_player, :player1, :player2, :next_board
 
   def initialize
   	menu
   end
 
   def menu
-  	puts "1. New Game\n2. Load Game\n3. Delete Game\n4. Quit Game"
+  	puts "1. 1 Player Game\n2. 2 Player Game\n3. Load Game\n4. Delete Game\n5. Quit Game"
   	input = gets.chomp
   	case input
-  	when "1"
-  	  game_setup
+    when "1"
+      setup_1_player
   	when "2"
-  	  load_game
+  	  setup_2_player
   	when "3"
+  	  load_game
+  	when "4"
   	  delete_game
-    when "4"
+    when "5"
       puts "Thanks for playing!"
   	else
   	  puts "Invalid input"
@@ -30,10 +32,21 @@ class ChessPlay
   	end
   end
 
-  def game_setup
+  def setup_1_player
+    @board = create_board
+    setup_board(@board)
+    puts "Please enter your name."
+    name = gets.chomp.capitalize
+    @player1 = Player.new(name,WHITE_PIECES)
+    @player2 = Player.new("AI",BLACK_PIECES)
+    puts "\nWelcome #{player1.name}. You will use the white pieces and the AI will use the black pieces.\n"
+    @current_player = @player1
+    game_loop
+  end
+
+  def setup_2_player
   	@board = create_board
   	setup_board(@board)
-  	@winner = false
   	puts "Please enter a name for player 1."
   	name = gets.chomp.capitalize
   	@player1 = Player.new(name,WHITE_PIECES)
@@ -47,34 +60,67 @@ class ChessPlay
 
   def game_loop
   	puts print_board(@board)
-  	puts "#{@current_player.name} please enter a move (ie. b1,c3) or type 'save' to save the game.\n"
-  	input = gets.chomp.downcase.strip
-  	input = input.split(",")
-    if input[0] == "save"
-      save_game
-      menu
-    elsif input.length != 2
-      puts "That is an invalid move."
-      game_loop
+    if @current_player.name == "AI"
+      puts "The AI moves."
+      ai_game_loop
     else
-    	start = input[0]
-    	finish = input[1]
-    	piece = convert_location(start)
-    	piece = @board[piece[0]][piece[1]]
-    	if @current_player.pieces.include?(piece)
-    	  @next_board = Marshal.load(Marshal.dump(@board))
-    	  move = move_piece(piece,start,finish,@next_board)
-    	  if move
-    	    game_end?
-    	  else
-    	    puts "That is an invalid move."
-          game_loop
-    	  end
-    	else
-    	  puts "That is not your piece to move!"
+    	puts "#{@current_player.name} please enter a move (ie. b1,c3) or type 'save' to save the game.\n"
+    	input = gets.chomp.downcase.strip
+    	input = input.split(",")
+      if input[0] == "save"
+        save_game
+        menu
+      elsif input.length != 2
+        puts "That is an invalid move."
         game_loop
-    	end
+      else
+      	start = input[0]
+      	finish = input[1]
+      	piece = convert_location(start)
+      	piece = @board[piece[0]][piece[1]]
+      	if @current_player.pieces.include?(piece)
+      	  @next_board = Marshal.load(Marshal.dump(@board))
+      	  move = move_piece(piece,start,finish,@next_board)
+      	  if move
+      	    game_end?
+      	  else
+      	    puts "That is an invalid move."
+            game_loop
+      	  end
+      	else
+      	  puts "That is not your piece to move!"
+          game_loop
+      	end
+      end
     end
+  end
+
+  def ai_game_loop
+    start = rand_square
+    piece = @board[start[0]][start[1]]
+    if @current_player.pieces.include?(piece)
+      if can_move?(piece,start,@board)  
+        move = false
+        until move 
+          finish = rand_square
+          @next_board = Marshal.load(Marshal.dump(@board))
+          move = move_piece(piece,start,finish,@next_board)
+        end
+        game_end?
+      else
+        ai_game_loop
+      end
+    else
+      ai_game_loop
+    end
+  end
+
+  def rand_square
+    row = Random.new
+    row = rand(8)
+    square = Random.new
+    square = rand(8)
+    [row,square]
   end
 
   def game_end?
@@ -85,7 +131,10 @@ class ChessPlay
   	  current_king = WKING
   	  next_king = BKING
   	end
-  	if check?(next_king,@next_board)
+    if check?(current_king,@next_board)
+      puts "You cannot put yourself in check."
+      game_loop
+  	elsif check?(next_king,@next_board)
   	  if checkmate?(next_king,@next_board)
   	    @winner = @current_player
         finished
@@ -95,12 +144,9 @@ class ChessPlay
   	  	@board = @next_board
         game_loop
   	  end
-  	elsif check?(current_king,@next_board)
-  	  puts "You cannot put yourself in check."
-      game_loop
   	elsif stalemate?(next_king,@next_board)
-      @winner = "noone"
-      finished
+      puts print_board(@next_board)
+      puts "Stalemate! It's a draw."
   	else
   	  @current_player == @player1 ? @current_player = @player2 : @current_player = @player1
   	  @board = @next_board
@@ -110,11 +156,7 @@ class ChessPlay
 
   def finished
   	puts print_board(@next_board)
-  	if @winner.class == String
-  	  puts "Stalemate! It's a draw."
-  	else
-  	  puts "Checkmate! #{@current_player.name} is the winner!"
-  	end
+  	puts "Checkmate! #{@current_player.name} is the winner!"
   end
 
   def save_game
