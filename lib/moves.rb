@@ -35,7 +35,11 @@ module ChessMoves
     if finish_space == WSQUARE || finish_space == BSQUARE
       if start[1] == finish[1]
         if finish[0] == start[0]-1
-          return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          if finish[0] == 0
+            return place_piece(choose_piece(WHITE_PIECES),board,start[0],start[1],finish[0],finish[1])
+          else
+            return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          end
         elsif finish[0] == start[0]-2 && start[0] == 6
           skipped = board[finish[0]][start[0]-1]
           if skipped == WSQUARE || skipped == BSQUARE
@@ -46,7 +50,11 @@ module ChessMoves
     elsif BLACK_PIECES.include?(finish_space) 
       if finish[0] == start[0]-1
         if finish[1] == start[1]-1 || finish[1] == start[1]+1
-          return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          if finish[0] == 0
+            return place_piece(choose_piece(WHITE_PIECES),board,start[0],start[1],finish[0],finish[1])
+          else
+            return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          end
         end
       end
     end
@@ -58,7 +66,11 @@ module ChessMoves
     if finish_space == WSQUARE || finish_space == BSQUARE
       if start[1] == finish[1]
         if finish[0] == start[0]+1
-          return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          if finish[0] == 7
+            return place_piece(choose_piece(BLACK_PIECES),board,start[0],start[1],finish[0],finish[1])
+          else
+            return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          end
         elsif finish[0] == start[0]+2 && start[0] == 1
           skipped = board[finish[0]][start[0]+1]
           if skipped == WSQUARE || skipped == BSQUARE
@@ -69,7 +81,11 @@ module ChessMoves
     elsif WHITE_PIECES.include?(finish_space) 
       if finish[0] == start[0]+1
         if finish[1] == start[1]+1 || finish[1] == start[1]-1
-          return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          if finish[0] == 7
+            return place_piece(choose_piece(BLACK_PIECES),board,start[0],start[1],finish[0],finish[1])
+          else
+            return place_piece(piece,board,start[0],start[1],finish[0],finish[1])
+          end
         end
       end
     end
@@ -283,5 +299,48 @@ module ChessMoves
       return path.all? {|i| i == WSQUARE || i == BSQUARE}      
     end
     false
+  end
+
+  def choose_piece(pieces)
+    loop do
+      puts "Which piece would you like your pawn to turn into?"
+      piece = gets.chomp.downcase
+      white = false
+      if pieces = WHITE_PIECES
+        white = true
+      end
+      case piece
+      when "queen"
+        if white
+          return WQUEEN
+        else
+          return BQUEEN
+        end
+      when "knight"
+        if white
+          return WKNIGHT
+        else
+          return BKNIGHT
+        end
+      when "bishop"
+        if white
+          return WBISHOP
+        else
+          return BBISHOP
+        end
+      when "rook"
+        if white
+          return WROOK
+        else
+          return BROOK
+        end
+      when "pawn"
+        puts "You don't want it to be a pawn."
+      when "king"
+        puts "You can't have another king!"
+      else
+        "Invalid input. Try again."
+      end
+    end
   end
 end
